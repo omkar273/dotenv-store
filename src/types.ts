@@ -21,6 +21,11 @@ export interface EnvStoreConfig {
      * Path to the key file for reading encryption key (default: '.env.store.key')
      */
     keyFilePath?: string;
+
+    /**
+     * Encryption algorithm to use (default: 'aes')
+     */
+    algorithm?: 'aes' | 'aes-256-cbc' | 'tripledes' | 'rabbit' | 'rc4';
 }
 
 /**
@@ -46,6 +51,11 @@ export interface EnvStoreConfigFile {
      * Encryption key (not recommended to store in config file)
      */
     key?: string;
+
+    /**
+     * Encryption algorithm to use (default: 'aes')
+     */
+    algorithm?: 'aes' | 'aes-256-cbc' | 'tripledes' | 'rabbit' | 'rc4';
 }
 
 /**
@@ -75,6 +85,11 @@ export interface EnvResult {
          * File path where the encryption key was stored
          */
         keyFilePath?: string;
+
+        /**
+         * Encryption algorithm used
+         */
+        algorithm?: 'aes' | 'aes-256-cbc' | 'tripledes' | 'rabbit' | 'rc4';
     };
 
     /**

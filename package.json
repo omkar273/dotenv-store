@@ -10,10 +10,12 @@
   },
   "scripts": {
     "build": "tsup",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "./scripts/test-cli.sh",
     "prepublishOnly": "npm run build",
     "example": "ts-node examples/basic-usage.ts",
     "example:config": "ts-node examples/config-usage.ts",
+    "example:algorithm": "ts-node examples/algorithm-usage.ts",
+    "example:tracking": "ts-node examples/algorithm-tracking.ts",
     "test-cli": "./scripts/test-cli.sh"
   },
   "keywords": [

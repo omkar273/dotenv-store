@@ -32,8 +32,11 @@ program
     .version(packageJson.version)
     .option('--config <file>', 'path to configuration file');
 
+// Default algorithm to use for encryption
+const DEFAULT_ALGORITHM = 'aes';
+
 // Helper function to create EnvStore with command options
-function createEnvStore(options: { key?: string, keyFile?: string }): EnvStore {
+function createEnvStore(options: { key?: string, keyFile?: string, algorithm?: string }): EnvStore {
     const config: any = {};
 
     if (options.key) {
@@ -42,6 +45,10 @@ function createEnvStore(options: { key?: string, keyFile?: string }): EnvStore {
 
     if (options.keyFile) {
         config.keyFilePath = options.keyFile;
+    }
+
+    if (options.algorithm) {
+        config.algorithm = options.algorithm;
     }
 
     return new EnvStore(config);
@@ -91,9 +98,141 @@ function loadConfigFile(configPath: string): EnvStoreConfigFile {
     return {};
 }
 
+// Helper function to update package.json with scripts
+async function updatePackageJson(configPath: string): Promise<boolean> {
+    try {
+        const packageJsonPath = path.join(process.cwd(), 'package.json');
+        if (!fs.existsSync(packageJsonPath)) {
+            console.error('package.json not found in the current directory');
+            return false;
+        }
+
+        const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
+
+        // Add scripts if they don't exist
+        if (!packageJson.scripts) {
+            packageJson.scripts = {};
+        }
+
+        // Add encrypt and decrypt scripts
+        const configOption = configPath !== defaultConfigPath ? ` --config ${configPath}` : '';
+        packageJson.scripts['env:encrypt'] = `env-store encrypt${configOption}`;
+        packageJson.scripts['env:decrypt'] = `env-store decrypt${configOption}`;
+
+        // Write updated package.json
+        await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
+        return true;
+    } catch (error) {
+        console.error(`Error updating package.json: ${(error as Error).message}`);
+        return false;
+    }
+}
+
+// Helper function to update .gitignore
+async function updateGitignore(): Promise<boolean> {
+    try {
+        const gitignorePath = path.join(process.cwd(), '.gitignore');
+        let content = '';
+
+        // Read existing .gitignore if it exists
+        if (fs.existsSync(gitignorePath)) {
+            content = await fs.readFile(gitignorePath, 'utf8');
+        }
+
+        // Check if .env.store.key is already in .gitignore
+        if (!content.includes('.env.store.key')) {
+            // Add .env.store.key to .gitignore
+            content += '\n# env-store encryption key\n.env.store.key\n';
+            await fs.writeFile(gitignorePath, content);
+        }
+
+        return true;
+    } catch (error) {
+        console.error(`Error updating .gitignore: ${(error as Error).message}`);
+        return false;
+    }
+}
+
+// Generate a random encryption key
+function generateEncryptionKey(length = 32): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+// Init command
+program
+    .command('init')
+    .alias('i')
+    .description('Initialize env-store in the current project')
+    .option('--config <file>', 'path to configuration file', defaultConfigPath)
+    .option('--algorithm <algorithm>', 'encryption algorithm to use', DEFAULT_ALGORITHM)
+    .action(async (options) => {
+        try {
+            console.log('Initializing env-store...');
+
+            // Warn if a non-default algorithm is used
+            if (options.algorithm !== DEFAULT_ALGORITHM) {
+                console.warn(`
+WARNING: You are using a non-default encryption algorithm (${options.algorithm}).
+Make sure to use the same algorithm for decryption or the data will be corrupted.
+The algorithm information is stored securely in the encrypted file.
+DO NOT EDIT the encrypted file manually.
+`);
+            }
+
+            // Create config file
+            const configPath = options.config;
+            const config: EnvStoreConfigFile = {
+                file: '.env.store',
+                output: '.env.store.enc',
+                envFile: '.env',
+                algorithm: options.algorithm
+            };
+
+            await fs.writeJson(configPath, config, { spaces: 2 });
+            console.log(`Created configuration file: ${configPath}`);
+
+            // Generate and store encryption key
+            const key = generateEncryptionKey();
+            const envStore = createEnvStore({ key, algorithm: options.algorithm });
+            const keyResult = await envStore.setEncryptionKey(key);
+
+            if (keyResult.success) {
+                console.log(`Generated encryption key and saved to .env.store.key`);
+
+                // Update .gitignore
+                if (await updateGitignore()) {
+                    console.log('Added .env.store.key to .gitignore');
+                }
+
+                // Update package.json
+                if (await updatePackageJson(configPath)) {
+                    console.log('Added env:encrypt and env:decrypt scripts to package.json');
+                }
+
+                console.log('\nInitialization complete! You can now use:');
+                console.log('- npm run env:encrypt - to encrypt your environment variables');
+                console.log('- npm run env:decrypt - to decrypt your environment variables');
+                console.log('- npx env-store e - shortcut for encrypt');
+                console.log('- npx env-store d - shortcut for decrypt');
+            } else {
+                console.error(`Failed to generate encryption key: ${keyResult.error}`);
+                process.exit(1);
+            }
+        } catch (error) {
+            console.error(`Error during initialization: ${(error as Error).message}`);
+            process.exit(1);
+        }
+    });
+
 // Encrypt command
 program
     .command('encrypt')
+    .alias('e')
     .description('Encrypt environment variables and save to a file')
     .option('-k, --key <key>', 'encryption key')
     .option('-f, --file <file>', 'output file path')
@@ -101,6 +240,7 @@ program
     .option('--env-file <file>', 'read variables from a .env file')
     .option('--key-file <file>', 'file containing the encryption key')
     .option('--output <file>', 'output file for encrypted variables')
+    .option('--algorithm <algorithm>', 'encryption algorithm to use', DEFAULT_ALGORITHM)
     .action(async (cmdOptions) => {
         try {
             // Check for config file option
@@ -116,10 +256,25 @@ program
                 file: cmdOptions.file || config.file || '.env.store',
                 envFile: cmdOptions.envFile || config.envFile || '.env',
                 env: cmdOptions.env,
-                output: cmdOptions.output || config.output
+                output: cmdOptions.output || config.output,
+                algorithm: cmdOptions.algorithm || config.algorithm || DEFAULT_ALGORITHM
             };
 
-            const envStore = createEnvStore({ key: options.key, keyFile: options.keyFile });
+            // Warn if a non-default algorithm is used
+            if (options.algorithm !== DEFAULT_ALGORITHM) {
+                console.warn(`
+WARNING: You are using a non-default encryption algorithm (${options.algorithm}).
+Make sure to use the same algorithm for decryption or the data will be corrupted.
+The algorithm information is stored securely in the encrypted file.
+DO NOT EDIT the encrypted file manually.
+`);
+            }
+
+            const envStore = createEnvStore({
+                key: options.key,
+                keyFile: options.keyFile,
+                algorithm: options.algorithm
+            });
 
             // Default to reading from .env if no env vars provided
             const envVars = await readEnvVariables({
@@ -139,7 +294,8 @@ program
 
             if (result.success) {
                 const filePath = result.data && 'filePath' in result.data ? result.data.filePath : outputFile;
-                console.log(`Environment variables encrypted and saved to ${filePath}`);
+                const algorithm = result.data && 'algorithm' in result.data ? result.data.algorithm : 'aes';
+                console.log(`Environment variables encrypted with ${algorithm} and saved to ${filePath}`);
             } else {
                 console.error(`Failed to encrypt: ${result.error}`);
                 process.exit(1);
@@ -153,11 +309,13 @@ program
 // Decrypt command
 program
     .command('decrypt')
+    .alias('d')
     .description('Decrypt environment variables from a file')
     .option('-k, --key <key>', 'encryption key')
     .option('-f, --file <file>', 'input file path')
     .option('-o, --output <file>', 'output file path for decrypted variables')
     .option('--key-file <file>', 'file containing the encryption key')
+    .option('--algorithm <algorithm>', 'encryption algorithm to use', DEFAULT_ALGORITHM)
     .action(async (cmdOptions) => {
         try {
             // Check for config file option
@@ -171,10 +329,16 @@ program
                 key: cmdOptions.key,
                 keyFile: cmdOptions.keyFile,
                 file: cmdOptions.file || config.file || '.env.store',
-                output: cmdOptions.output || config.output
+                output: cmdOptions.output || config.output,
+                algorithm: cmdOptions.algorithm || config.algorithm || DEFAULT_ALGORITHM
             };
 
-            const envStore = createEnvStore({ key: options.key, keyFile: options.keyFile });
+            const envStore = createEnvStore({
+                key: options.key,
+                keyFile: options.keyFile,
+                algorithm: options.algorithm
+            });
+
             const inputFile = options.file;
 
             // Override the default file path for retrieval
@@ -209,10 +373,12 @@ program
 // List command
 program
     .command('list')
+    .alias('l')
     .description('List environment variables from an encrypted file')
     .option('-k, --key <key>', 'encryption key')
     .option('-f, --file <file>', 'input file path')
     .option('--key-file <file>', 'file containing the encryption key')
+    .option('--algorithm <algorithm>', 'encryption algorithm to use', DEFAULT_ALGORITHM)
     .action(async (cmdOptions) => {
         try {
             // Check for config file option
@@ -225,10 +391,16 @@ program
             const options = {
                 key: cmdOptions.key,
                 keyFile: cmdOptions.keyFile,
-                file: cmdOptions.file || config.file || '.env.store'
+                file: cmdOptions.file || config.file || '.env.store',
+                algorithm: cmdOptions.algorithm || config.algorithm || DEFAULT_ALGORITHM
             };
 
-            const envStore = createEnvStore({ key: options.key, keyFile: options.keyFile });
+            const envStore = createEnvStore({
+                key: options.key,
+                keyFile: options.keyFile,
+                algorithm: options.algorithm
+            });
+
             const inputFile = options.file;
 
             // Override the default file path for retrieval
@@ -252,6 +424,7 @@ program
 // Set key command
 program
     .command('set-key')
+    .alias('k')
     .description('Set the encryption key in a key file')
     .option('-k, --key <key>', 'encryption key to store', 'env-store-key')
     .option('-f, --file <file>', 'key file path', '.env.store.key')

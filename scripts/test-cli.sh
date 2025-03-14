@@ -65,8 +65,61 @@ node ./dist/cli.js --config env-store.config.json list --key test-secret-key
 echo -e "\n\n=== Testing decrypt with config file ==="
 node ./dist/cli.js --config env-store.config.json decrypt --key test-secret-key
 
+# Test command shortcuts
+echo -e "\n\n=== Testing command shortcuts ==="
+node ./dist/cli.js e --key test-secret-key
+node ./dist/cli.js l --key test-secret-key
+node ./dist/cli.js d --key test-secret-key
+
+# Test with different encryption algorithms
+echo -e "\n\n=== Testing with different encryption algorithms ==="
+# Test AES-256-CBC
+echo -e "\n=== Testing AES-256-CBC algorithm ==="
+node ./dist/cli.js encrypt --key test-secret-key --algorithm aes-256-cbc --file .env.aes256.enc
+node ./dist/cli.js list --key test-secret-key --algorithm aes-256-cbc --file .env.aes256.enc
+node ./dist/cli.js decrypt --key test-secret-key --algorithm aes-256-cbc --file .env.aes256.enc
+
+# Test TripleDES
+echo -e "\n=== Testing TripleDES algorithm ==="
+node ./dist/cli.js encrypt --key test-secret-key --algorithm tripledes --file .env.tripledes.enc
+node ./dist/cli.js list --key test-secret-key --algorithm tripledes --file .env.tripledes.enc
+node ./dist/cli.js decrypt --key test-secret-key --algorithm tripledes --file .env.tripledes.enc
+
+# Test init command in a temporary directory
+echo -e "\n\n=== Testing init command ==="
+# Create a temporary directory
+TEMP_DIR=$(mktemp -d)
+cd $TEMP_DIR
+
+# Create a dummy package.json
+echo '{
+  "name": "test-env-store",
+  "version": "1.0.0",
+  "scripts": {}
+}' > package.json
+
+# Run init command
+echo -e "\n=== Running init command ==="
+node $OLDPWD/dist/cli.js init --algorithm aes-256-cbc
+
+# Check if files were created
+echo -e "\n=== Checking created files ==="
+ls -la
+
+# Check if package.json was updated
+echo -e "\n=== Checking package.json ==="
+cat package.json
+
+# Check if .gitignore was updated
+echo -e "\n=== Checking .gitignore ==="
+cat .gitignore
+
+# Go back to original directory
+cd $OLDPWD
+
 # Clean up test files
 echo -e "\n\n=== Cleaning up test files ==="
-rm -f .env .env.store .env.store.enc env-store.config.json
+rm -f .env .env.store .env.store.enc env-store.config.json .env.aes256.enc .env.tripledes.enc
+rm -rf $TEMP_DIR
 
 echo -e "\n\n=== CLI tests completed ==="

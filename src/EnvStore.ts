@@ -4,11 +4,15 @@ import { decrypt } from './helpers/decrypt';
 import { readFile, writeFile, getAbsolutePath } from './helpers/file';
 import { EnvStoreConfig, EnvVariables, EnvResult } from './types';
 
+// Default algorithm to use for encryption
+const DEFAULT_ALGORITHM = 'aes';
+
 export class EnvStore {
     private config: Required<EnvStoreConfig>;
     private defaultKey = 'env-store-key';
     private defaultFileName = '.env.store';
     private defaultKeyFileName = '.env.store.key';
+    private defaultAlgorithm: 'aes' | 'aes-256-cbc' | 'tripledes' | 'rabbit' | 'rc4' = DEFAULT_ALGORITHM;
 
     constructor(config: EnvStoreConfig = {}) {
         this.config = {
@@ -16,7 +20,18 @@ export class EnvStore {
             fileName: config.fileName || this.defaultFileName,
             filePath: config.filePath || process.cwd(),
             keyFilePath: config.keyFilePath || path.join(process.cwd(), this.defaultKeyFileName),
+            algorithm: config.algorithm || this.defaultAlgorithm,
         };
+
+        // Warn if a non-default algorithm is used
+        if (this.config.algorithm !== DEFAULT_ALGORITHM) {
+            console.warn(`
+WARNING: You are using a non-default encryption algorithm (${this.config.algorithm}).
+Make sure to use the same algorithm for decryption or the data will be corrupted.
+The algorithm information is stored securely in the encrypted file.
+DO NOT EDIT the encrypted file manually.
+`);
+        }
     }
 
     /**
@@ -61,14 +76,17 @@ export class EnvStore {
         try {
             const encryptionKey = await this.getEncryptionKey();
             const envString = JSON.stringify(envVars);
-            const encryptedData = encrypt(envString, encryptionKey);
+            const encryptedData = encrypt(envString, encryptionKey, this.config.algorithm);
 
             const targetFilePath = this.getEnvFilePath(filePath);
             await writeFile(targetFilePath, encryptedData);
 
             return {
                 success: true,
-                data: { filePath: targetFilePath }
+                data: {
+                    filePath: targetFilePath,
+                    algorithm: this.config.algorithm
+                }
             };
         } catch (error) {
             return {
@@ -95,7 +113,8 @@ export class EnvStore {
             }
 
             const encryptionKey = await this.getEncryptionKey();
-            const decryptedData = decrypt(encryptedData, encryptionKey);
+            // The algorithm parameter will be overridden if algorithm info is found in the encrypted data
+            const decryptedData = decrypt(encryptedData, encryptionKey, this.config.algorithm);
             const envVars = JSON.parse(decryptedData) as EnvVariables;
 
             return {
@@ -121,7 +140,10 @@ export class EnvStore {
 
             return {
                 success: true,
-                data: { keyFilePath }
+                data: {
+                    keyFilePath,
+                    algorithm: this.config.algorithm
+                }
             };
         } catch (error) {
             return {
