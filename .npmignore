@@ -1,13 +1,7 @@
 /src
 /node_modules
 
-.env
+.env.*
 .DS_Store
-.env.store.key
-.env.store
-examples/custom.env.store
-examples/custom.env.store.key
-examples/custom.env.store.enc
-examples/custom.env.store.dec
-examples/custom.env.store.enc.key
-examples/custom.env.store.dec.key
+.env
+env-store.config.json
