@@ -26,8 +26,19 @@
     "secure",
     "storage"
   ],
+  "homepage": "https://github.com/omkar273/env-store",
   "author": "Omkar Sonawane",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/omkar273/env-store.git"
+  },
+  "bugs": {
+    "url": "https://github.com/omkar273/env-store/issues"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "files": [
     "dist",
     "README.md",
