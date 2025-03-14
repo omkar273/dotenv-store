@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import dotenv from 'dotenv';
 import { EnvStore } from './EnvStore';
-import { EnvVariables } from './types';
+import { EnvVariables, EnvStoreConfigFile } from './types';
 
 const program = new Command();
 
@@ -13,10 +13,24 @@ const program = new Command();
 const packageJsonPath = path.join(__dirname, '../package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
+// Configuration file support
+// Try to load config file
+let configFile: EnvStoreConfigFile = {};
+const defaultConfigPath = 'env-store.config.json';
+
+try {
+    if (fs.existsSync(defaultConfigPath)) {
+        configFile = JSON.parse(fs.readFileSync(defaultConfigPath, 'utf8'));
+    }
+} catch (error) {
+    // Silently fail if config file doesn't exist or is invalid
+}
+
 program
     .name('env-store')
     .description('A utility to securely encrypt and manage environment variables')
-    .version(packageJson.version);
+    .version(packageJson.version)
+    .option('--config <file>', 'path to configuration file');
 
 // Helper function to create EnvStore with command options
 function createEnvStore(options: { key?: string, keyFile?: string }): EnvStore {
@@ -65,35 +79,67 @@ async function readEnvVariables(options: {
     return envVars;
 }
 
+// Helper function to load config file
+function loadConfigFile(configPath: string): EnvStoreConfigFile {
+    try {
+        if (fs.existsSync(configPath)) {
+            return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        }
+    } catch (error) {
+        console.error(`Error reading config file: ${(error as Error).message}`);
+    }
+    return {};
+}
+
 // Encrypt command
 program
     .command('encrypt')
     .description('Encrypt environment variables and save to a file')
     .option('-k, --key <key>', 'encryption key')
-    .option('-f, --file <file>', 'output file path', '.env.store')
+    .option('-f, --file <file>', 'output file path')
     .option('-e, --env <keyValue...>', 'environment variables in KEY=VALUE format')
     .option('--env-file <file>', 'read variables from a .env file')
     .option('--key-file <file>', 'file containing the encryption key')
-    .action(async (options) => {
+    .option('--output <file>', 'output file for encrypted variables')
+    .action(async (cmdOptions) => {
         try {
+            // Check for config file option
+            let config = configFile;
+            if (program.opts().config) {
+                config = loadConfigFile(program.opts().config);
+            }
+
+            // Merge options with config file, prioritizing command line options
+            const options = {
+                key: cmdOptions.key,
+                keyFile: cmdOptions.keyFile,
+                file: cmdOptions.file || config.file || '.env.store',
+                envFile: cmdOptions.envFile || config.envFile || '.env',
+                env: cmdOptions.env,
+                output: cmdOptions.output || config.output
+            };
+
             const envStore = createEnvStore({ key: options.key, keyFile: options.keyFile });
+
+            // Default to reading from .env if no env vars provided
             const envVars = await readEnvVariables({
                 dotenvFile: options.envFile,
                 env: options.env
             });
 
             if (Object.keys(envVars).length === 0) {
-                console.error('No environment variables provided. Use --env KEY=VALUE or --env-file options.');
+                console.error('No environment variables found. Make sure .env file exists or use --env KEY=VALUE option.');
                 process.exit(1);
             }
 
-            const outputFile = options.file;
+            const outputFile = options.output || options.file;
 
             // Override the default file path
             const result = await envStore.store(envVars, outputFile);
 
             if (result.success) {
-                console.log(`Environment variables encrypted and saved to ${outputFile}`);
+                const filePath = result.data && 'filePath' in result.data ? result.data.filePath : outputFile;
+                console.log(`Environment variables encrypted and saved to ${filePath}`);
             } else {
                 console.error(`Failed to encrypt: ${result.error}`);
                 process.exit(1);
@@ -109,11 +155,25 @@ program
     .command('decrypt')
     .description('Decrypt environment variables from a file')
     .option('-k, --key <key>', 'encryption key')
-    .option('-f, --file <file>', 'input file path', '.env.store')
+    .option('-f, --file <file>', 'input file path')
     .option('-o, --output <file>', 'output file path for decrypted variables')
     .option('--key-file <file>', 'file containing the encryption key')
-    .action(async (options) => {
+    .action(async (cmdOptions) => {
         try {
+            // Check for config file option
+            let config = configFile;
+            if (program.opts().config) {
+                config = loadConfigFile(program.opts().config);
+            }
+
+            // Merge options with config file, prioritizing command line options
+            const options = {
+                key: cmdOptions.key,
+                keyFile: cmdOptions.keyFile,
+                file: cmdOptions.file || config.file || '.env.store',
+                output: cmdOptions.output || config.output
+            };
+
             const envStore = createEnvStore({ key: options.key, keyFile: options.keyFile });
             const inputFile = options.file;
 
@@ -151,10 +211,23 @@ program
     .command('list')
     .description('List environment variables from an encrypted file')
     .option('-k, --key <key>', 'encryption key')
-    .option('-f, --file <file>', 'input file path', '.env.store')
+    .option('-f, --file <file>', 'input file path')
     .option('--key-file <file>', 'file containing the encryption key')
-    .action(async (options) => {
+    .action(async (cmdOptions) => {
         try {
+            // Check for config file option
+            let config = configFile;
+            if (program.opts().config) {
+                config = loadConfigFile(program.opts().config);
+            }
+
+            // Merge options with config file, prioritizing command line options
+            const options = {
+                key: cmdOptions.key,
+                keyFile: cmdOptions.keyFile,
+                file: cmdOptions.file || config.file || '.env.store'
+            };
+
             const envStore = createEnvStore({ key: options.key, keyFile: options.keyFile });
             const inputFile = options.file;
 
@@ -204,6 +277,12 @@ program
 
 // Parse command line arguments
 program.parse(process.argv);
+
+// If config option is provided but no command, show error
+if (program.opts().config && process.argv.length <= 3) {
+    console.error('Please specify a command (encrypt, decrypt, list, set-key) when using --config option');
+    process.exit(1);
+}
 
 // Display help if no command is provided
 if (!process.argv.slice(2).length) {

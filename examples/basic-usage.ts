@@ -73,6 +73,31 @@ async function exampleWithKeyFile() {
     }
 }
 
+// Example 5: Using default arguments with CLI
+console.log('\n\nExample 5: Using default arguments with CLI');
+console.log('----------------------------------------');
+console.log('# Encrypt environment variables with default arguments:');
+console.log('npx env-store encrypt');
+console.log('\n# Decrypt environment variables with default arguments:');
+console.log('npx env-store decrypt');
+console.log('\n# List environment variables with default arguments:');
+console.log('npx env-store list');
+
+// Example 6: Using configuration file with CLI
+console.log('\n\nExample 6: Using configuration file with CLI');
+console.log('----------------------------------------');
+console.log('# Create a configuration file (env-store.config.json):');
+console.log(JSON.stringify({
+    file: '.env.store',
+    output: '.env.store.enc',
+    envFile: '.env'
+}, null, 2));
+
+console.log('\n# Use the configuration file:');
+console.log('npx env-store --config env-store.config.json encrypt --key my-secret-key');
+console.log('npx env-store --config env-store.config.json decrypt --key my-secret-key');
+console.log('npx env-store --config env-store.config.json list --key my-secret-key');
+
 // Run examples
 async function runExamples() {
     try {

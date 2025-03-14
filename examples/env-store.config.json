@@ -1,0 +1,5 @@
+{
+    "file": ".env.store",
+    "output": ".env.store.enc",
+    "envFile": ".env"
+}

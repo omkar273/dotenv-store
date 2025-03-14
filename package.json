@@ -13,6 +13,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepublishOnly": "npm run build",
     "example": "ts-node examples/basic-usage.ts",
+    "example:config": "ts-node examples/config-usage.ts",
     "test-cli": "./scripts/test-cli.sh"
   },
   "keywords": [

@@ -11,6 +11,7 @@ A secure environment variables manager that encrypts and stores environment vari
 - Customizable file path and name
 - Support for storing encryption key in a separate file
 - Command-line interface (CLI) for easy usage
+- Configuration file support
 
 ## Installation
 
@@ -24,9 +25,27 @@ npx env-store [command] [options]
 
 ## CLI Usage
 
+### Basic Commands
+
+The CLI supports simple commands with default arguments:
+
+```bash
+# Encrypt environment variables (reads from .env by default)
+npx env-store encrypt
+
+# Decrypt environment variables (reads from .env.store by default)
+npx env-store decrypt
+
+# List environment variables (reads from .env.store by default)
+npx env-store list
+```
+
 ### Encrypt Environment Variables
 
 ```bash
+# Basic usage with defaults
+npx env-store encrypt
+
 # Encrypt individual variables
 npx env-store encrypt --env API_KEY=your-api-key --env DB_URL=your-db-url
 
@@ -34,36 +53,61 @@ npx env-store encrypt --env API_KEY=your-api-key --env DB_URL=your-db-url
 npx env-store encrypt --env-file .env
 
 # Specify a custom output file
-npx env-store encrypt --env-file .env --file .env.encrypted
+npx env-store encrypt --env-file .env --file .env.store --output .env.store.enc
 
 # Use a custom encryption key
-npx env-store encrypt --env-file .env --key your-secret-key
+npx env-store encrypt --key my-secret-key --file .env.store --output .env.store.enc
 
 # Use a key stored in a file
-npx env-store encrypt --env-file .env --key-file .env.key
+npx env-store encrypt --key-file .env.key
 ```
 
 ### Decrypt Environment Variables
 
 ```bash
-# Decrypt and display variables
-npx env-store decrypt --file .env.encrypted
+# Basic usage with defaults
+npx env-store decrypt
 
-# Decrypt to a file
-npx env-store decrypt --file .env.encrypted --output .env.decrypted
+# Decrypt with custom options
+npx env-store decrypt --key my-secret-key --file .env.store.enc --output .env.store.dec
 
-# Use a custom encryption key
-npx env-store decrypt --file .env.encrypted --key your-secret-key
+# Use a key stored in a file
+npx env-store decrypt --key-file .env.key --file .env.store.enc
 ```
 
 ### List Environment Variables
 
 ```bash
-# List variables from the default encrypted file
+# Basic usage with defaults
 npx env-store list
 
-# List variables from a specific file
-npx env-store list --file .env.encrypted
+# List with custom options
+npx env-store list --key my-secret-key --file .env.store
+```
+
+### Using Configuration File
+
+You can use a configuration file to specify options:
+
+```bash
+# Use a configuration file
+npx env-store --config env-store.config.json
+```
+
+The configuration file should be named `env-store.config.json` and placed in the root of your project:
+
+```json
+{
+  "file": ".env.store",
+  "output": ".env.store.enc"
+}
+```
+
+When using a configuration file, you can only pass the `key` parameter as an argument:
+
+```bash
+# Use config file with a custom key
+npx env-store encrypt --key my-secret-key
 ```
 
 ### Set Encryption Key
@@ -115,22 +159,38 @@ const result = await customEnvStore.retrieve();
 
 ### CLI Options
 
-| Command   | Option                    | Description                               | Default          |
-| --------- | ------------------------- | ----------------------------------------- | ---------------- |
-| `encrypt` | `-k, --key <key>`         | Encryption key                            | `env-store-key`  |
-|           | `-f, --file <file>`       | Output file path                          | `.env.store`     |
-|           | `-e, --env <keyValue...>` | Environment variables in KEY=VALUE format |                  |
-|           | `--env-file <file>`       | Read variables from a .env file           |                  |
-|           | `--key-file <file>`       | File containing the encryption key        |                  |
-| `decrypt` | `-k, --key <key>`         | Encryption key                            | `env-store-key`  |
-|           | `-f, --file <file>`       | Input file path                           | `.env.store`     |
-|           | `-o, --output <file>`     | Output file path for decrypted variables  |                  |
-|           | `--key-file <file>`       | File containing the encryption key        |                  |
-| `list`    | `-k, --key <key>`         | Encryption key                            | `env-store-key`  |
-|           | `-f, --file <file>`       | Input file path                           | `.env.store`     |
-|           | `--key-file <file>`       | File containing the encryption key        |                  |
-| `set-key` | `-k, --key <key>`         | Encryption key to store                   | `env-store-key`  |
-|           | `-f, --file <file>`       | Key file path                             | `.env.store.key` |
+| Command    | Option                    | Description                               | Default                 |
+| ---------- | ------------------------- | ----------------------------------------- | ----------------------- |
+| `encrypt`  | `-k, --key <key>`         | Encryption key                            | `env-store-key`         |
+|            | `-f, --file <file>`       | Output file path                          | `.env.store`            |
+|            | `-e, --env <keyValue...>` | Environment variables in KEY=VALUE format |                         |
+|            | `--env-file <file>`       | Read variables from a .env file           | `.env` (default)        |
+|            | `--key-file <file>`       | File containing the encryption key        |                         |
+|            | `--output <file>`         | Output file for encrypted variables       | Same as `file`          |
+| `decrypt`  | `-k, --key <key>`         | Encryption key                            | `env-store-key`         |
+|            | `-f, --file <file>`       | Input file path                           | `.env.store`            |
+|            | `-o, --output <file>`     | Output file path for decrypted variables  |                         |
+|            | `--key-file <file>`       | File containing the encryption key        |                         |
+| `list`     | `-k, --key <key>`         | Encryption key                            | `env-store-key`         |
+|            | `-f, --file <file>`       | Input file path                           | `.env.store`            |
+|            | `--key-file <file>`       | File containing the encryption key        |                         |
+| `set-key`  | `-k, --key <key>`         | Encryption key to store                   | `env-store-key`         |
+|            | `-f, --file <file>`       | Key file path                             | `.env.store.key`        |
+| `--config` | `<file>`                  | Path to configuration file                | `env-store.config.json` |
+
+### Configuration File
+
+The configuration file (`env-store.config.json`) supports the following options:
+
+```json
+{
+  "file": ".env.store",
+  "output": ".env.store.enc",
+  "envFile": ".env"
+}
+```
+
+When using a configuration file, only the `key` parameter can be passed as a command-line argument.
 
 ### EnvStore Class
 

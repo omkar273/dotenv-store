@@ -63,10 +63,12 @@ export class EnvStore {
             const envString = JSON.stringify(envVars);
             const encryptedData = encrypt(envString, encryptionKey);
 
-            await writeFile(this.getEnvFilePath(filePath), encryptedData);
+            const targetFilePath = this.getEnvFilePath(filePath);
+            await writeFile(targetFilePath, encryptedData);
 
             return {
                 success: true,
+                data: { filePath: targetFilePath }
             };
         } catch (error) {
             return {
@@ -119,6 +121,7 @@ export class EnvStore {
 
             return {
                 success: true,
+                data: { keyFilePath }
             };
         } catch (error) {
             return {

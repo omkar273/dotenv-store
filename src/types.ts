@@ -24,6 +24,31 @@ export interface EnvStoreConfig {
 }
 
 /**
+ * Configuration file structure
+ */
+export interface EnvStoreConfigFile {
+    /**
+     * Input/output file path (default: '.env.store')
+     */
+    file?: string;
+
+    /**
+     * Output file path for encrypted variables
+     */
+    output?: string;
+
+    /**
+     * Path to the .env file to read variables from (default: '.env')
+     */
+    envFile?: string;
+
+    /**
+     * Encryption key (not recommended to store in config file)
+     */
+    key?: string;
+}
+
+/**
  * Environment variables object
  */
 export type EnvVariables = Record<string, string>;
@@ -38,9 +63,19 @@ export interface EnvResult {
     success: boolean;
 
     /**
-     * Retrieved environment variables (if successful)
+     * Retrieved environment variables (if successful) or other data
      */
-    data?: EnvVariables;
+    data?: EnvVariables | {
+        /**
+         * File path where the environment variables were stored or retrieved from
+         */
+        filePath?: string;
+
+        /**
+         * File path where the encryption key was stored
+         */
+        keyFilePath?: string;
+    };
 
     /**
      * Error message (if unsuccessful)
