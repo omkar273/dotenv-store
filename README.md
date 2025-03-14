@@ -10,49 +10,85 @@ A secure environment variables manager that encrypts and stores environment vari
 - Customizable encryption key
 - Customizable file path and name
 - Support for storing encryption key in a separate file
+- Command-line interface (CLI) for easy usage
 
 ## Installation
 
 ```bash
-npm install env-store
+# Install globally
+npm install -g env-store
+
+# Or run with npx
+npx env-store [command] [options]
 ```
 
-## Usage
+## CLI Usage
 
-### Basic Usage
+### Encrypt Environment Variables
 
-```typescript
-import envStore from "env-store";
+```bash
+# Encrypt individual variables
+npx env-store encrypt --env API_KEY=your-api-key --env DB_URL=your-db-url
 
-// Store environment variables
-const storeResult = await envStore.store({
-  API_KEY: "your-api-key",
-  DATABASE_URL: "your-db-url",
-  SECRET: "your-secret",
-});
+# Encrypt from a .env file
+npx env-store encrypt --env-file .env
 
-if (storeResult.success) {
-  console.log("Environment variables stored successfully");
-} else {
-  console.error("Failed to store environment variables:", storeResult.error);
-}
+# Specify a custom output file
+npx env-store encrypt --env-file .env --file .env.encrypted
 
-// Retrieve environment variables
-const retrieveResult = await envStore.retrieve();
+# Use a custom encryption key
+npx env-store encrypt --env-file .env --key your-secret-key
 
-if (retrieveResult.success && retrieveResult.data) {
-  console.log("Environment variables:", retrieveResult.data);
-  // Use the variables in your application
-  const apiKey = retrieveResult.data.API_KEY;
-} else {
-  console.error(
-    "Failed to retrieve environment variables:",
-    retrieveResult.error
-  );
-}
+# Use a key stored in a file
+npx env-store encrypt --env-file .env --key-file .env.key
 ```
 
-### Custom Configuration
+### Decrypt Environment Variables
+
+```bash
+# Decrypt and display variables
+npx env-store decrypt --file .env.encrypted
+
+# Decrypt to a file
+npx env-store decrypt --file .env.encrypted --output .env.decrypted
+
+# Use a custom encryption key
+npx env-store decrypt --file .env.encrypted --key your-secret-key
+```
+
+### List Environment Variables
+
+```bash
+# List variables from the default encrypted file
+npx env-store list
+
+# List variables from a specific file
+npx env-store list --file .env.encrypted
+```
+
+### Set Encryption Key
+
+```bash
+# Set a custom encryption key in a file
+npx env-store set-key --key your-secret-key
+
+# Specify a custom key file path
+npx env-store set-key --key your-secret-key --file custom-key-file
+```
+
+### Help
+
+```bash
+# Get help for all commands
+npx env-store --help
+
+# Get help for a specific command
+npx env-store encrypt --help
+```
+
+## Programmatic Usage
+
+For advanced use cases, you can also use the package programmatically in your Node.js applications:
 
 ```typescript
 import { EnvStore } from "env-store";
@@ -75,24 +111,30 @@ await customEnvStore.store({
 const result = await customEnvStore.retrieve();
 ```
 
-### Store Encryption Key in a File
+## API Reference
 
-```typescript
-import envStore from "env-store";
+### CLI Options
 
-// Set a custom encryption key in a file
-await envStore.setEncryptionKey("my-secure-encryption-key");
+| Command   | Option                    | Description                               | Default          |
+| --------- | ------------------------- | ----------------------------------------- | ---------------- |
+| `encrypt` | `-k, --key <key>`         | Encryption key                            | `env-store-key`  |
+|           | `-f, --file <file>`       | Output file path                          | `.env.store`     |
+|           | `-e, --env <keyValue...>` | Environment variables in KEY=VALUE format |                  |
+|           | `--env-file <file>`       | Read variables from a .env file           |                  |
+|           | `--key-file <file>`       | File containing the encryption key        |                  |
+| `decrypt` | `-k, --key <key>`         | Encryption key                            | `env-store-key`  |
+|           | `-f, --file <file>`       | Input file path                           | `.env.store`     |
+|           | `-o, --output <file>`     | Output file path for decrypted variables  |                  |
+|           | `--key-file <file>`       | File containing the encryption key        |                  |
+| `list`    | `-k, --key <key>`         | Encryption key                            | `env-store-key`  |
+|           | `-f, --file <file>`       | Input file path                           | `.env.store`     |
+|           | `--key-file <file>`       | File containing the encryption key        |                  |
+| `set-key` | `-k, --key <key>`         | Encryption key to store                   | `env-store-key`  |
+|           | `-f, --file <file>`       | Key file path                             | `.env.store.key` |
 
-// The key will be read from the file automatically when storing/retrieving
-await envStore.store({ API_KEY: "your-api-key" });
-const result = await envStore.retrieve();
-```
+### EnvStore Class
 
-## API
-
-### EnvStore
-
-The main class for managing environment variables.
+The main class for managing environment variables programmatically.
 
 #### Constructor
 
@@ -109,8 +151,8 @@ new EnvStore(config?: EnvStoreConfig)
 
 #### Methods
 
-- `store(envVars: Record<string, string>): Promise<EnvResult>` - Encrypts and stores environment variables
-- `retrieve(): Promise<EnvResult>` - Retrieves and decrypts environment variables
+- `store(envVars: Record<string, string>, filePath?: string): Promise<EnvResult>` - Encrypts and stores environment variables
+- `retrieve(filePath?: string): Promise<EnvResult>` - Retrieves and decrypts environment variables
 - `setEncryptionKey(key: string): Promise<EnvResult>` - Stores the encryption key in a file
 
 ## License

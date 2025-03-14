@@ -37,8 +37,15 @@ export class EnvStore {
 
     /**
      * Get the full path to the env store file
+     * @param filePath - Optional override for the file path
      */
-    private getEnvFilePath(): string {
+    private getEnvFilePath(filePath?: string): string {
+        // If a specific file path is provided, use it directly
+        if (filePath) {
+            return getAbsolutePath(filePath);
+        }
+
+        // Otherwise use the configured path
         return path.join(
             getAbsolutePath(this.config.filePath),
             this.config.fileName
@@ -48,14 +55,15 @@ export class EnvStore {
     /**
      * Store environment variables in an encrypted file
      * @param envVars - Environment variables to store
+     * @param filePath - Optional override for the file path
      */
-    public async store(envVars: EnvVariables): Promise<EnvResult> {
+    public async store(envVars: EnvVariables, filePath?: string): Promise<EnvResult> {
         try {
             const encryptionKey = await this.getEncryptionKey();
             const envString = JSON.stringify(envVars);
             const encryptedData = encrypt(envString, encryptionKey);
 
-            await writeFile(this.getEnvFilePath(), encryptedData);
+            await writeFile(this.getEnvFilePath(filePath), encryptedData);
 
             return {
                 success: true,
@@ -70,16 +78,17 @@ export class EnvStore {
 
     /**
      * Retrieve and decrypt environment variables from the stored file
+     * @param filePath - Optional override for the file path
      */
-    public async retrieve(): Promise<EnvResult> {
+    public async retrieve(filePath?: string): Promise<EnvResult> {
         try {
-            const filePath = this.getEnvFilePath();
-            const encryptedData = await readFile(filePath);
+            const targetFilePath = this.getEnvFilePath(filePath);
+            const encryptedData = await readFile(targetFilePath);
 
             if (!encryptedData) {
                 return {
                     success: false,
-                    error: `Environment file not found at: ${filePath}`,
+                    error: `Environment file not found at: ${targetFilePath}`,
                 };
             }
 
