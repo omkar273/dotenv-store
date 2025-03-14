@@ -1,0 +1,49 @@
+{
+  "name": "env-store",
+  "version": "1.0.0",
+  "description": "A simple package to encrypt and store environment variables in a file",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublishOnly": "npm run build",
+    "example": "ts-node examples/basic-usage.ts"
+  },
+  "keywords": [
+    "env",
+    "environment",
+    "variables",
+    "encrypt",
+    "secure",
+    "storage"
+  ],
+  "author": "Omkar Sonawane",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "devDependencies": {
+    "@types/crypto-js": "^4.2.1",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.8.10",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "crypto-js": "^4.2.0",
+    "fs-extra": "^11.1.1",
+    "path": "^0.12.7"
+  }
+}
