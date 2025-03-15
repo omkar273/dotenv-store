@@ -16,7 +16,10 @@
     "example:config": "ts-node examples/config-usage.ts",
     "example:algorithm": "ts-node examples/algorithm-usage.ts",
     "example:tracking": "ts-node examples/algorithm-tracking.ts",
-    "test-cli": "./scripts/test-cli.sh"
+    "test-cli": "./scripts/test-cli.sh",
+    "release:patch": "git add . && git commit -m 'chore: prepare for release' && npm version patch && git push origin main --tags && npm publish",
+    "release:minor": "git add . && git commit -m 'chore: prepare for release' && npm version minor && git push origin main --tags && npm publish",
+    "release:major": "git add . && git commit -m 'chore: prepare for release' && npm version major && git push origin main --tags && npm publish"
   },
   "keywords": [
     "env",
