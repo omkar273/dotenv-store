@@ -16,7 +16,7 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 // Configuration file support
 // Try to load config file
 let configFile: EnvStoreConfigFile = {};
-const defaultConfigPath = 'env-store.config.json';
+const defaultConfigPath = 'dotenv-store.config.json';
 
 try {
     if (fs.existsSync(defaultConfigPath)) {
@@ -27,7 +27,7 @@ try {
 }
 
 program
-    .name('env-store')
+    .name('dotenv-store')
     .description('A utility to securely encrypt and manage environment variables')
     .version(packageJson.version)
     .option('--config <file>', 'path to configuration file');
@@ -116,8 +116,8 @@ async function updatePackageJson(configPath: string): Promise<boolean> {
 
         // Add encrypt and decrypt scripts
         const configOption = configPath !== defaultConfigPath ? ` --config ${configPath}` : '';
-        packageJson.scripts['env:encrypt'] = `env-store encrypt${configOption}`;
-        packageJson.scripts['env:decrypt'] = `env-store decrypt${configOption}`;
+        packageJson.scripts['env:encrypt'] = `dotenv-store encrypt${configOption}`;
+        packageJson.scripts['env:decrypt'] = `dotenv-store decrypt${configOption}`;
 
         // Write updated package.json
         await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
@@ -142,7 +142,7 @@ async function updateGitignore(): Promise<boolean> {
         // Check if .env.store.key is already in .gitignore
         if (!content.includes('.env.store.key')) {
             // Add .env.store.key to .gitignore
-            content += '\n# env-store encryption key\n.env.store.key\n';
+            content += '\n# dotenv-store encryption key\n.env.store.key\n';
             await fs.writeFile(gitignorePath, content);
         }
 
@@ -167,12 +167,12 @@ function generateEncryptionKey(length = 32): string {
 program
     .command('init')
     .alias('i')
-    .description('Initialize env-store in the current project')
+    .description('Initialize dotenv-store in the current project')
     .option('--config <file>', 'path to configuration file', defaultConfigPath)
     .option('--algorithm <algorithm>', 'encryption algorithm to use', DEFAULT_ALGORITHM)
     .action(async (options) => {
         try {
-            console.log('Initializing env-store...');
+            console.log('Initializing dotenv-store...');
 
             // Warn if a non-default algorithm is used
             if (options.algorithm !== DEFAULT_ALGORITHM) {
@@ -187,42 +187,41 @@ DO NOT EDIT the encrypted file manually.
             // Create config file
             const configPath = options.config;
             const config: EnvStoreConfigFile = {
-                file: '.env.store',
-                output: '.env.store.enc',
-                envFile: '.env',
-                algorithm: options.algorithm
+                'store-filepath': '.env.store',
+                'output-filepath': '.env.store.enc',
+                'env-filepath': '.env',
+                'algorithm': options.algorithm
             };
 
             await fs.writeJson(configPath, config, { spaces: 2 });
             console.log(`Created configuration file: ${configPath}`);
+            console.log(`
+WARNING: Be careful when editing the configuration file. 
+Changing values might cause issues with existing encrypted files.
+NEVER modify the encrypted store files directly.
+`);
 
-            // Generate and store encryption key
-            const key = generateEncryptionKey();
-            const envStore = createEnvStore({ key, algorithm: options.algorithm });
-            const keyResult = await envStore.setEncryptionKey(key);
-
-            if (keyResult.success) {
-                console.log(`Generated encryption key and saved to .env.store.key`);
-
-                // Update .gitignore
-                if (await updateGitignore()) {
-                    console.log('Added .env.store.key to .gitignore');
-                }
-
-                // Update package.json
-                if (await updatePackageJson(configPath)) {
-                    console.log('Added env:encrypt and env:decrypt scripts to package.json');
-                }
-
-                console.log('\nInitialization complete! You can now use:');
-                console.log('- npm run env:encrypt - to encrypt your environment variables');
-                console.log('- npm run env:decrypt - to decrypt your environment variables');
-                console.log('- npx env-store e - shortcut for encrypt');
-                console.log('- npx env-store d - shortcut for decrypt');
-            } else {
-                console.error(`Failed to generate encryption key: ${keyResult.error}`);
-                process.exit(1);
+            // Update .gitignore
+            if (await updateGitignore()) {
+                console.log('Added .env.store.key to .gitignore');
             }
+
+            // Update package.json
+            if (await updatePackageJson(configPath)) {
+                console.log('Added env:encrypt and env:decrypt scripts to package.json');
+            }
+
+            console.log('\nInitialization complete! Next steps:');
+            console.log('\n1. Generate an encryption key:');
+            console.log('   npx dotenv-store set-key --key YOUR_SECRET_KEY');
+            console.log('   (or use a randomly generated key with: npx dotenv-store set-key)');
+            console.log('\n2. Encrypt your environment variables:');
+            console.log('   npm run env:encrypt');
+            console.log('   (or: npx dotenv-store e)');
+            console.log('\n3. Decrypt your environment variables:');
+            console.log('   npm run env:decrypt');
+            console.log('   (or: npx dotenv-store d)');
+
         } catch (error) {
             console.error(`Error during initialization: ${(error as Error).message}`);
             process.exit(1);
@@ -249,16 +248,43 @@ program
                 config = loadConfigFile(program.opts().config);
             }
 
+            // Handle both new and legacy config field names
+            const getConfigValue = (newField: string, legacyField: string, defaultValue: string) => {
+                return config[newField] || config[legacyField] || defaultValue;
+            };
+
             // Merge options with config file, prioritizing command line options
             const options = {
                 key: cmdOptions.key,
-                keyFile: cmdOptions.keyFile,
-                file: cmdOptions.file || config.file || '.env.store',
-                envFile: cmdOptions.envFile || config.envFile || '.env',
+                keyFile: cmdOptions.keyFile || '.env.store.key',
+                file: cmdOptions.file ||
+                    getConfigValue('store-filepath', 'file', '.env.store'),
+                envFile: cmdOptions.envFile ||
+                    getConfigValue('env-filepath', 'envFile', '.env'),
                 env: cmdOptions.env,
-                output: cmdOptions.output || config.output,
-                algorithm: cmdOptions.algorithm || config.algorithm || DEFAULT_ALGORITHM
+                output: cmdOptions.output ||
+                    getConfigValue('output-filepath', 'output', ''),
+                algorithm: cmdOptions.algorithm ||
+                    getConfigValue('algorithm', 'algorithm', DEFAULT_ALGORITHM)
             };
+
+            // Check if key file exists or key is provided
+            if (!cmdOptions.key && !fs.existsSync(options.keyFile)) {
+                console.error(`
+ERROR: No encryption key provided and key file not found at ${options.keyFile}
+
+Please either:
+1. Provide a key directly with the --key option:
+   npx dotenv-store encrypt --key YOUR_SECRET_KEY
+
+2. Generate a key file first:
+   npx dotenv-store set-key --key YOUR_SECRET_KEY
+   
+3. Specify a custom key file location:
+   npx dotenv-store encrypt --key-file /path/to/your/key/file
+`);
+                process.exit(1);
+            }
 
             // Warn if a non-default algorithm is used
             if (options.algorithm !== DEFAULT_ALGORITHM) {
@@ -316,6 +342,7 @@ program
     .option('-o, --output <file>', 'output file path for decrypted variables')
     .option('--key-file <file>', 'file containing the encryption key')
     .option('--algorithm <algorithm>', 'encryption algorithm to use', DEFAULT_ALGORITHM)
+    .option('-v, --verbose', 'display decrypted variables in console')
     .action(async (cmdOptions) => {
         try {
             // Check for config file option
@@ -324,14 +351,40 @@ program
                 config = loadConfigFile(program.opts().config);
             }
 
+            // Handle both new and legacy config field names
+            const getConfigValue = (newField: string, legacyField: string, defaultValue: string) => {
+                return config[newField] || config[legacyField] || defaultValue;
+            };
+
             // Merge options with config file, prioritizing command line options
             const options = {
                 key: cmdOptions.key,
-                keyFile: cmdOptions.keyFile,
-                file: cmdOptions.file || config.file || '.env.store',
-                output: cmdOptions.output || config.output,
-                algorithm: cmdOptions.algorithm || config.algorithm || DEFAULT_ALGORITHM
+                keyFile: cmdOptions.keyFile || '.env.store.key',
+                file: cmdOptions.file ||
+                    getConfigValue('store-filepath', 'file', '.env.store'),
+                output: cmdOptions.output ||
+                    getConfigValue('output-filepath', 'output', '.env.store.decrypted'),
+                algorithm: cmdOptions.algorithm ||
+                    getConfigValue('algorithm', 'algorithm', DEFAULT_ALGORITHM)
             };
+
+            // Check if key file exists or key is provided
+            if (!cmdOptions.key && !fs.existsSync(options.keyFile)) {
+                console.error(`
+ERROR: No encryption key provided and key file not found at ${options.keyFile}
+
+Please either:
+1. Provide a key directly with the --key option:
+   npx dotenv-store decrypt --key YOUR_SECRET_KEY
+
+2. Generate a key file first:
+   npx dotenv-store set-key --key YOUR_SECRET_KEY
+   
+3. Specify a custom key file location:
+   npx dotenv-store decrypt --key-file /path/to/your/key/file
+`);
+                process.exit(1);
+            }
 
             const envStore = createEnvStore({
                 key: options.key,
@@ -349,17 +402,17 @@ program
                 process.exit(1);
             }
 
-            // If output file is specified, write variables to the file
-            if (options.output) {
-                const outputContent = Object.entries(result.data)
-                    .map(([key, value]) => `${key}=${value}`)
-                    .join('\n');
+            // Always write variables to the output file
+            const outputContent = Object.entries(result.data)
+                .map(([key, value]) => `${key}=${value}`)
+                .join('\n');
 
-                await fs.writeFile(options.output, outputContent, 'utf8');
-                console.log(`Decrypted variables saved to ${options.output}`);
-            } else {
-                // Otherwise, display variables in the console
-                console.log('Decrypted environment variables:');
+            await fs.writeFile(options.output, outputContent, 'utf8');
+            console.log(`Decrypted variables saved to ${options.output}`);
+
+            // Also display variables in the console if requested
+            if (cmdOptions.verbose) {
+                console.log('\nDecrypted environment variables:');
                 for (const [key, value] of Object.entries(result.data)) {
                     console.log(`${key}=${value}`);
                 }
@@ -387,13 +440,38 @@ program
                 config = loadConfigFile(program.opts().config);
             }
 
+            // Handle both new and legacy config field names
+            const getConfigValue = (newField: string, legacyField: string, defaultValue: string) => {
+                return config[newField] || config[legacyField] || defaultValue;
+            };
+
             // Merge options with config file, prioritizing command line options
             const options = {
                 key: cmdOptions.key,
-                keyFile: cmdOptions.keyFile,
-                file: cmdOptions.file || config.file || '.env.store',
-                algorithm: cmdOptions.algorithm || config.algorithm || DEFAULT_ALGORITHM
+                keyFile: cmdOptions.keyFile || '.env.store.key',
+                file: cmdOptions.file ||
+                    getConfigValue('store-filepath', 'file', '.env.store'),
+                algorithm: cmdOptions.algorithm ||
+                    getConfigValue('algorithm', 'algorithm', DEFAULT_ALGORITHM)
             };
+
+            // Check if key file exists or key is provided
+            if (!cmdOptions.key && !fs.existsSync(options.keyFile)) {
+                console.error(`
+ERROR: No encryption key provided and key file not found at ${options.keyFile}
+
+Please either:
+1. Provide a key directly with the --key option:
+   npx dotenv-store list --key YOUR_SECRET_KEY
+
+2. Generate a key file first:
+   npx dotenv-store set-key --key YOUR_SECRET_KEY
+   
+3. Specify a custom key file location:
+   npx dotenv-store list --key-file /path/to/your/key/file
+`);
+                process.exit(1);
+            }
 
             const envStore = createEnvStore({
                 key: options.key,
@@ -402,6 +480,12 @@ program
             });
 
             const inputFile = options.file;
+
+            // Check if the input file exists
+            if (!fs.existsSync(inputFile)) {
+                console.error(`ERROR: Environment file not found at ${inputFile}`);
+                process.exit(1);
+            }
 
             // Override the default file path for retrieval
             const result = await envStore.retrieve(inputFile);
@@ -426,7 +510,7 @@ program
     .command('set-key')
     .alias('k')
     .description('Set the encryption key in a key file')
-    .option('-k, --key <key>', 'encryption key to store', 'env-store-key')
+    .option('-k, --key <key>', 'encryption key to store', 'dotenv-store-key')
     .option('-f, --file <file>', 'key file path', '.env.store.key')
     .action(async (options) => {
         try {

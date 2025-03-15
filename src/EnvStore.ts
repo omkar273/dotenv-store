@@ -3,13 +3,14 @@ import { encrypt } from './helpers/encrypt';
 import { decrypt } from './helpers/decrypt';
 import { readFile, writeFile, getAbsolutePath } from './helpers/file';
 import { EnvStoreConfig, EnvVariables, EnvResult } from './types';
+import fs from 'fs';
 
 // Default algorithm to use for encryption
 const DEFAULT_ALGORITHM = 'aes';
 
 export class EnvStore {
     private config: Required<EnvStoreConfig>;
-    private defaultKey = 'env-store-key';
+    private defaultKey = 'dotenv-store-key';
     private defaultFileName = '.env.store';
     private defaultKeyFileName = '.env.store.key';
     private defaultAlgorithm: 'aes' | 'aes-256-cbc' | 'tripledes' | 'rabbit' | 'rc4' = DEFAULT_ALGORITHM;
@@ -40,10 +41,17 @@ DO NOT EDIT the encrypted file manually.
     private async getEncryptionKey(): Promise<string> {
         // Try to read the key from file
         const keyFilePath = getAbsolutePath(this.config.keyFilePath);
-        const keyFromFile = await readFile(keyFilePath);
 
-        if (keyFromFile) {
-            return keyFromFile.trim();
+        try {
+            const keyFromFile = await readFile(keyFilePath);
+            if (keyFromFile) {
+                return keyFromFile.trim();
+            }
+        } catch (error) {
+            // If key file doesn't exist and no key was provided, throw an error
+            if (!this.config.key || this.config.key === this.defaultKey) {
+                throw new Error(`Encryption key file not found at ${keyFilePath} and no key was provided. Please provide a key or create a key file.`);
+            }
         }
 
         // Return the configured key or default
@@ -103,12 +111,21 @@ DO NOT EDIT the encrypted file manually.
     public async retrieve(filePath?: string): Promise<EnvResult> {
         try {
             const targetFilePath = this.getEnvFilePath(filePath);
+
+            // Check if the file exists
+            if (!fs.existsSync(targetFilePath)) {
+                return {
+                    success: false,
+                    error: `Environment file not found at: ${targetFilePath}`,
+                };
+            }
+
             const encryptedData = await readFile(targetFilePath);
 
             if (!encryptedData) {
                 return {
                     success: false,
-                    error: `Environment file not found at: ${targetFilePath}`,
+                    error: `Environment file is empty at: ${targetFilePath}`,
                 };
             }
 

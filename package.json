@@ -1,12 +1,12 @@
 {
-  "name": "env-store",
+  "name": "dotenv-store",
   "version": "1.0.0",
   "description": "A simple package to encrypt and store environment variables in a file",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "bin": {
-    "env-store": "./dist/cli.js"
+    "dotenv-store": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsup",
@@ -26,15 +26,15 @@
     "secure",
     "storage"
   ],
-  "homepage": "https://github.com/omkar273/env-store",
+  "homepage": "https://github.com/omkar273/dotenv-store",
   "author": "Omkar Sonawane",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/omkar273/env-store.git"
+    "url": "https://github.com/omkar273/dotenv-store.git"
   },
   "bugs": {
-    "url": "https://github.com/omkar273/env-store/issues"
+    "url": "https://github.com/omkar273/dotenv-store/issues"
   },
   "activationEvents": [
     "onStartupFinished"

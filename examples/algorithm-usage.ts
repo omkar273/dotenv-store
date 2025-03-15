@@ -1,5 +1,5 @@
 /**
- * Example demonstrating how to use env-store with different encryption algorithms
+ * Example demonstrating how to use dotenv-store with different encryption algorithms
  */
 
 import { EnvStore } from '../src';
@@ -52,13 +52,13 @@ async function algorithmExample() {
 
     console.log('\n=== CLI Usage with Different Algorithms ===');
     console.log('# Encrypt with AES-256-CBC:');
-    console.log('npx env-store encrypt --algorithm aes-256-cbc --key my-secret-key');
+    console.log('npx dotenv-store encrypt --algorithm aes-256-cbc --key my-secret-key');
 
     console.log('\n# Decrypt with AES-256-CBC:');
-    console.log('npx env-store decrypt --algorithm aes-256-cbc --key my-secret-key');
+    console.log('npx dotenv-store decrypt --algorithm aes-256-cbc --key my-secret-key');
 
     console.log('\n# Initialize with TripleDES:');
-    console.log('npx env-store init --algorithm tripledes');
+    console.log('npx dotenv-store init --algorithm tripledes');
 
     console.log('\n# Using algorithm in config file:');
     console.log(JSON.stringify({

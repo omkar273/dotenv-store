@@ -1,9 +1,9 @@
 /**
- * Config options for the env-store
+ * Config options for the dotenv-store
  */
 export interface EnvStoreConfig {
     /**
-     * Secret key for encryption/decryption (default: 'env-store-key')
+     * Secret key for encryption/decryption (default: 'dotenv-store-key')
      */
     key?: string;
 
@@ -33,29 +33,37 @@ export interface EnvStoreConfig {
  */
 export interface EnvStoreConfigFile {
     /**
-     * Input/output file path (default: '.env.store')
+     * Path to the file where encrypted environment variables are stored
+     * Default: '.env.store'
      */
+    'store-filepath'?: string;
+
+    /**
+     * Path to the output file for encrypted variables
+     * Default: '.env.store.enc'
+     */
+    'output-filepath'?: string;
+
+    /**
+     * Path to the .env file to read variables from
+     * Default: '.env'
+     */
+    'env-filepath'?: string;
+
+    /**
+     * Encryption algorithm to use
+     * Default: 'aes'
+     * Options: 'aes', 'aes-256-cbc', 'tripledes', 'rabbit', 'rc4'
+     */
+    'algorithm'?: 'aes' | 'aes-256-cbc' | 'tripledes' | 'rabbit' | 'rc4';
+
+    // Legacy field names for backward compatibility
     file?: string;
-
-    /**
-     * Output file path for encrypted variables
-     */
     output?: string;
-
-    /**
-     * Path to the .env file to read variables from (default: '.env')
-     */
     envFile?: string;
 
-    /**
-     * Encryption key (not recommended to store in config file)
-     */
-    key?: string;
-
-    /**
-     * Encryption algorithm to use (default: 'aes')
-     */
-    algorithm?: 'aes' | 'aes-256-cbc' | 'tripledes' | 'rabbit' | 'rc4';
+    // Index signature to allow dynamic property access
+    [key: string]: string | 'aes' | 'aes-256-cbc' | 'tripledes' | 'rabbit' | 'rc4' | undefined;
 }
 
 /**

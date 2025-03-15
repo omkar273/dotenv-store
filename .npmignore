@@ -4,4 +4,4 @@
 .env.*
 .DS_Store
 .env
-env-store.config.json
+dotenv-store.config.json

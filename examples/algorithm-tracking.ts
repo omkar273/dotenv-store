@@ -1,5 +1,5 @@
 /**
- * Example demonstrating how env-store tracks encryption algorithms
+ * Example demonstrating how dotenv-store tracks encryption algorithms
  */
 
 import fs from 'fs-extra';
@@ -73,10 +73,10 @@ async function algorithmTrackingExample() {
 
         console.log('\n=== CLI Usage with Algorithm Tracking ===');
         console.log('# Encrypt with a non-default algorithm:');
-        console.log('npx env-store encrypt --algorithm aes-256-cbc --key my-secret-key');
+        console.log('npx dotenv-store encrypt --algorithm aes-256-cbc --key my-secret-key');
 
         console.log('\n# Decrypt without specifying the algorithm:');
-        console.log('npx env-store decrypt --key my-secret-key');
+        console.log('npx dotenv-store decrypt --key my-secret-key');
         console.log('# The algorithm will be automatically detected from the encrypted content');
     } finally {
         // Clean up
