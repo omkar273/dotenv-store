@@ -1,6 +1,6 @@
 {
   "name": "dotenv-store",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A simple package to encrypt and store environment variables in a file",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
