@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Build the package
-echo "Building dotenv-store..."
+echo "Building dotdotenv-store..."
 npm run build
 
 # Test directly via node
@@ -51,19 +51,19 @@ node ./dist/cli.js decrypt --key test-secret-key
 # Test with configuration file
 echo -e "\n\n=== Testing with configuration file ==="
 # Copy config file to root directory
-cp examples/dotenv-store.config.json .
+cp examples/dotdotenv-store.config.json .
 
 # Test encrypt with config file
 echo -e "\n\n=== Testing encrypt with config file ==="
-node ./dist/cli.js --config dotenv-store.config.json encrypt --key test-secret-key
+node ./dist/cli.js --config dotdotenv-store.config.json encrypt --key test-secret-key
 
 # Test list with config file
 echo -e "\n\n=== Testing list with config file ==="
-node ./dist/cli.js --config dotenv-store.config.json list --key test-secret-key
+node ./dist/cli.js --config dotdotenv-store.config.json list --key test-secret-key
 
 # Test decrypt with config file
 echo -e "\n\n=== Testing decrypt with config file ==="
-node ./dist/cli.js --config dotenv-store.config.json decrypt --key test-secret-key
+node ./dist/cli.js --config dotdotenv-store.config.json decrypt --key test-secret-key
 
 # Test command shortcuts
 echo -e "\n\n=== Testing command shortcuts ==="
@@ -93,7 +93,7 @@ cd $TEMP_DIR
 
 # Create a dummy package.json
 echo '{
-  "name": "test-dotenv-store",
+  "name": "test-dotdotenv-store",
   "version": "1.0.0",
   "scripts": {}
 }' > package.json
@@ -119,7 +119,7 @@ cd $OLDPWD
 
 # Clean up test files
 echo -e "\n\n=== Cleaning up test files ==="
-rm -f .env .env.store .env.store.enc dotenv-store.config.json .env.aes256.enc .env.tripledes.enc
+rm -f .env .env.store .env.store.enc dotdotenv-store.config.json .env.aes256.enc .env.tripledes.enc
 rm -rf $TEMP_DIR
 
 echo -e "\n\n=== CLI tests completed ==="

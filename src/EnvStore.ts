@@ -23,16 +23,6 @@ export class EnvStore {
             keyFilePath: config.keyFilePath || path.join(process.cwd(), this.defaultKeyFileName),
             algorithm: config.algorithm || this.defaultAlgorithm,
         };
-
-        // Warn if a non-default algorithm is used
-        if (this.config.algorithm !== DEFAULT_ALGORITHM) {
-            console.warn(`
-WARNING: You are using a non-default encryption algorithm (${this.config.algorithm}).
-Make sure to use the same algorithm for decryption or the data will be corrupted.
-The algorithm information is stored securely in the encrypted file.
-DO NOT EDIT the encrypted file manually.
-`);
-        }
     }
 
     /**
@@ -99,49 +89,55 @@ DO NOT EDIT the encrypted file manually.
         } catch (error) {
             return {
                 success: false,
-                error: `Failed to store environment variables: ${(error as Error).message}`,
+                error: (error as Error).message
             };
         }
     }
 
     /**
-     * Retrieve and decrypt environment variables from the stored file
+     * Retrieve and decrypt environment variables from a file
      * @param filePath - Optional override for the file path
      */
     public async retrieve(filePath?: string): Promise<EnvResult> {
         try {
+            const encryptionKey = await this.getEncryptionKey();
             const targetFilePath = this.getEnvFilePath(filePath);
 
-            // Check if the file exists
-            if (!fs.existsSync(targetFilePath)) {
-                return {
-                    success: false,
-                    error: `Environment file not found at: ${targetFilePath}`,
-                };
-            }
-
+            // Read the encrypted data
             const encryptedData = await readFile(targetFilePath);
-
             if (!encryptedData) {
                 return {
                     success: false,
-                    error: `Environment file is empty at: ${targetFilePath}`,
+                    error: `No data found in file: ${targetFilePath}`
                 };
             }
 
-            const encryptionKey = await this.getEncryptionKey();
-            // The algorithm parameter will be overridden if algorithm info is found in the encrypted data
-            const decryptedData = decrypt(encryptedData, encryptionKey, this.config.algorithm);
-            const envVars = JSON.parse(decryptedData) as EnvVariables;
+            // Decrypt the data
+            const decryptedData = decrypt(encryptedData, encryptionKey);
+            if (!decryptedData) {
+                return {
+                    success: false,
+                    error: 'Failed to decrypt data. Check your encryption key.'
+                };
+            }
 
-            return {
-                success: true,
-                data: envVars,
-            };
+            // Parse the decrypted JSON
+            try {
+                const envVars = JSON.parse(decryptedData);
+                return {
+                    success: true,
+                    data: envVars
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: 'Failed to parse decrypted data. The file may be corrupted.'
+                };
+            }
         } catch (error) {
             return {
                 success: false,
-                error: `Failed to retrieve environment variables: ${(error as Error).message}`,
+                error: (error as Error).message
             };
         }
     }

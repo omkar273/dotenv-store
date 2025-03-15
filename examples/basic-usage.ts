@@ -77,16 +77,16 @@ async function exampleWithKeyFile() {
 console.log('\n\nExample 5: Using default arguments with CLI');
 console.log('----------------------------------------');
 console.log('# Encrypt environment variables with default arguments:');
-console.log('npx dotenv-store encrypt');
+console.log('npx dotdotenv-store encrypt');
 console.log('\n# Decrypt environment variables with default arguments:');
-console.log('npx dotenv-store decrypt');
+console.log('npx dotdotenv-store decrypt');
 console.log('\n# List environment variables with default arguments:');
-console.log('npx dotenv-store list');
+console.log('npx dotdotenv-store list');
 
 // Example 6: Using configuration file with CLI
 console.log('\n\nExample 6: Using configuration file with CLI');
 console.log('----------------------------------------');
-console.log('# Create a configuration file (dotenv-store.config.json):');
+console.log('# Create a configuration file (dotdotenv-store.config.json):');
 console.log(JSON.stringify({
     file: '.env.store',
     output: '.env.store.enc',
@@ -94,9 +94,9 @@ console.log(JSON.stringify({
 }, null, 2));
 
 console.log('\n# Use the configuration file:');
-console.log('npx dotenv-store --config dotenv-store.config.json encrypt --key my-secret-key');
-console.log('npx dotenv-store --config dotenv-store.config.json decrypt --key my-secret-key');
-console.log('npx dotenv-store --config dotenv-store.config.json list --key my-secret-key');
+console.log('npx dotdotenv-store --config dotdotenv-store.config.json encrypt --key my-secret-key');
+console.log('npx dotdotenv-store --config dotdotenv-store.config.json decrypt --key my-secret-key');
+console.log('npx dotdotenv-store --config dotdotenv-store.config.json list --key my-secret-key');
 
 // Run examples
 async function runExamples() {

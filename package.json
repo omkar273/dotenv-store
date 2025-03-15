@@ -1,7 +1,7 @@
 {
   "name": "dotenv-store",
   "version": "1.0.2",
-  "description": "A simple package to encrypt and store environment variables in a file",
+  "description": "A secure environment variables manager that encrypts and stores environment variables in a file, keeping your sensitive data safe",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -27,7 +27,9 @@
     "variables",
     "encrypt",
     "secure",
-    "storage"
+    "storage",
+    "secrets",
+    "security"
   ],
   "homepage": "https://github.com/omkar273/dotenv-store",
   "author": "Omkar Sonawane",

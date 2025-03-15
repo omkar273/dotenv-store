@@ -1,5 +1,5 @@
 /**
- * Example demonstrating how to use dotenv-store with a configuration file
+ * Example demonstrating how to use dotdotenv-store with a configuration file
  */
 
 import fs from 'fs-extra';
@@ -26,18 +26,18 @@ DEBUG=true
         envFile: '.env.example'
     };
 
-    await fs.writeJson('dotenv-store.config.example.json', configContent, { spaces: 2 });
-    console.log('Created dotenv-store.config.example.json configuration file');
+    await fs.writeJson('dotdotenv-store.config.example.json', configContent, { spaces: 2 });
+    console.log('Created dotdotenv-store.config.example.json configuration file');
 
     console.log('\n=== CLI Usage with Configuration File ===');
     console.log('# Encrypt using config file:');
-    console.log('npx dotenv-store --config dotenv-store.config.example.json encrypt --key my-secret-key');
+    console.log('npx dotdotenv-store --config dotdotenv-store.config.example.json encrypt --key my-secret-key');
 
     console.log('\n# Decrypt using config file:');
-    console.log('npx dotenv-store --config dotenv-store.config.example.json decrypt --key my-secret-key');
+    console.log('npx dotdotenv-store --config dotdotenv-store.config.example.json decrypt --key my-secret-key');
 
     console.log('\n# List using config file:');
-    console.log('npx dotenv-store --config dotenv-store.config.example.json list --key my-secret-key');
+    console.log('npx dotdotenv-store --config dotdotenv-store.config.example.json list --key my-secret-key');
 
     console.log('\n=== Programmatic Usage ===');
 
@@ -76,7 +76,7 @@ DEBUG=true
     await fs.remove('.env.example');
     await fs.remove('.env.example.store');
     await fs.remove('.env.example.enc');
-    await fs.remove('dotenv-store.config.example.json');
+    await fs.remove('dotdotenv-store.config.example.json');
     console.log('Example files removed');
 }
 

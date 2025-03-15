@@ -1,9 +1,9 @@
 /**
- * Config options for the dotenv-store
+ * Config options for the dotdotenv-store
  */
 export interface EnvStoreConfig {
     /**
-     * Secret key for encryption/decryption (default: 'dotenv-store-key')
+     * Secret key for encryption/decryption (default: 'dotdotenv-store-key')
      */
     key?: string;
 
@@ -33,22 +33,28 @@ export interface EnvStoreConfig {
  */
 export interface EnvStoreConfigFile {
     /**
-     * Path to the file where encrypted environment variables are stored
-     * Default: '.env.store'
-     */
-    'store-filepath'?: string;
-
-    /**
-     * Path to the output file for encrypted variables
-     * Default: '.env.store.enc'
-     */
-    'output-filepath'?: string;
-
-    /**
      * Path to the .env file to read variables from
      * Default: '.env'
      */
     'env-filepath'?: string;
+
+    /**
+     * Path to the file where encrypted variables will be stored
+     * Default: '.env.store'
+     */
+    'store-file-path'?: string;
+
+    /**
+     * Path to the file where decrypted variables will be stored after decryption
+     * Default: '.env.store.decrypted'
+     */
+    'decrypted-file-path'?: string;
+
+    /**
+     * Path to the file where the encryption key is stored
+     * Default: '.env.store.key'
+     */
+    'key-file-path'?: string;
 
     /**
      * Encryption algorithm to use
@@ -58,6 +64,8 @@ export interface EnvStoreConfigFile {
     'algorithm'?: 'aes' | 'aes-256-cbc' | 'tripledes' | 'rabbit' | 'rc4';
 
     // Legacy field names for backward compatibility
+    'store-filepath'?: string;
+    'output-filepath'?: string;
     file?: string;
     output?: string;
     envFile?: string;
